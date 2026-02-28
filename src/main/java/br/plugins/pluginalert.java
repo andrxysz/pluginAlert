@@ -18,11 +18,15 @@ import java.util.Iterator;
 public final class pluginalert extends JavaPlugin implements PluginMessageListener {
 
     private static final String BUNGEE_CHANNEL = "BungeeCord";
-    private static final String ALERT_SUB_CHANNEL = "AlertChannel";
-    private static final String PREFIX = ChatColor.YELLOW + "[Alert] " + ChatColor.RESET;
+    private static final String AC = "AlertChannel";
+    private String prefix;
+    private String setinha;
+    private boolean espacoEntreAlert;
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
+        prefixLoader();
         Bukkit.getMessenger().registerOutgoingPluginChannel(this, BUNGEE_CHANNEL);
         Bukkit.getMessenger().registerIncomingPluginChannel(this, BUNGEE_CHANNEL, this);
     }
@@ -38,33 +42,32 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
         if (!command.getName().equalsIgnoreCase("alert")) {
             return false;
         }
-
         if (args.length < 2) {
             sender.sendMessage(ChatColor.RED + "Uso: /alert <servidor|here> <mensagem>");
             return true;
         }
 
         String target = args[0];
-        String message = ChatColor.translateAlternateColorCodes('&', buildMessage(args, 1));
+        String message = alertFormat(buildMessage(args));
 
         if ("here".equalsIgnoreCase(target)) {
-            Bukkit.broadcastMessage(message);
-            sender.sendMessage(PREFIX + ChatColor.GREEN + "Alerta enviado para este servidor.");
+            broadcastAlert(message);
+            sender.sendMessage(ChatColor.GREEN + "Alert enviado neste servidor.");
             return true;
         }
 
         Player carrier = getAnyOnlinePlayer();
         if (carrier == null) {
-            sender.sendMessage(PREFIX + ChatColor.RED + "Precisa de ao menos 1 jogador online para enviar entre servidores.");
+            sender.sendMessage(ChatColor.RED + "Precisa de ao menos 1 jogador online para enviar entre servidores.");
             return true;
         }
 
         try {
-            sendAlertToServer(carrier, target, message);
-            sender.sendMessage(PREFIX + ChatColor.GREEN + "Alerta enviado para " + target + ".");
+            serverAlertsender(carrier, target, message);
+            sender.sendMessage(ChatColor.GREEN + "Alert enviado para " + target + ".");
         } catch (IOException e) {
-            sender.sendMessage(PREFIX + ChatColor.RED + "Falha ao encaminhar o alerta.");
-            getLogger().severe("Erro ao enviar alerta para " + target + ": " + e.getMessage());
+            sender.sendMessage(ChatColor.RED + "Nao foi possivel enviar o alert.");
+            getLogger().severe("Houve um erro ao encaminhar o alert para: " + target + ": " + e.getMessage());
         }
 
         return true;
@@ -79,23 +82,22 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
         try {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
             String subChannel = in.readUTF();
-            if (!ALERT_SUB_CHANNEL.equals(subChannel)) {
+            if (!AC.equals(subChannel)) {
                 return;
             }
-
             short length = in.readShort();
             byte[] payload = new byte[length];
             in.readFully(payload);
 
             DataInputStream payloadIn = new DataInputStream(new ByteArrayInputStream(payload));
             String message = payloadIn.readUTF();
-            Bukkit.broadcastMessage(message);
+            broadcastAlert(message);
         } catch (IOException e) {
-            getLogger().severe("Erro ao processar mensagem recebida: " + e.getMessage());
+            getLogger().severe("Houve um erro ao processar a mensagem: " + e.getMessage());
         }
     }
 
-    private void sendAlertToServer(Player carrier, String targetServer, String message) throws IOException {
+    private void serverAlertsender(Player carrier, String targetServer, String message) throws IOException {
         ByteArrayOutputStream payloadBytes = new ByteArrayOutputStream();
         DataOutputStream payloadOut = new DataOutputStream(payloadBytes);
         payloadOut.writeUTF(message);
@@ -104,17 +106,17 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
         DataOutputStream out = new DataOutputStream(outBytes);
         out.writeUTF("Forward");
         out.writeUTF(targetServer);
-        out.writeUTF(ALERT_SUB_CHANNEL);
+        out.writeUTF(AC);
         out.writeShort(payloadBytes.size());
         out.write(payloadBytes.toByteArray());
 
         carrier.sendPluginMessage(this, BUNGEE_CHANNEL, outBytes.toByteArray());
     }
 
-    private String buildMessage(String[] args, int startIndex) {
+    private String buildMessage(String[] args) {
         StringBuilder sb = new StringBuilder();
-        for (int i = startIndex; i < args.length; i++) {
-            if (i > startIndex) {
+        for (int i = 1; i < args.length; i++) {
+            if (i > 1) {
                 sb.append(' ');
             }
             sb.append(args[i]);
@@ -128,5 +130,33 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
             return iterator.next();
         }
         return null;
+    }
+
+    private void prefixLoader() {
+        prefix = getConfig().getString("prefix", "SERVER");
+        if (prefix == null || prefix.trim().isEmpty()) {
+            prefix = "SERVER";
+        }
+
+        setinha = getConfig().getString("setinha", ">");
+        if (setinha == null || setinha.trim().isEmpty()) {
+            setinha = ">";
+        }
+
+        espacoEntreAlert = getConfig().getBoolean("espaco-entre-alert", true);
+    }
+
+    private String alertFormat(String message) {
+        return ChatColor.translateAlternateColorCodes('&', "&b&l" + prefix + " &f&l" + setinha + " " + message);
+    }
+
+    private void broadcastAlert(String message) {
+        if (espacoEntreAlert) {
+            Bukkit.broadcastMessage(" ");
+        }
+        Bukkit.broadcastMessage(message);
+        if (espacoEntreAlert) {
+            Bukkit.broadcastMessage(" ");
+        }
     }
 }
