@@ -19,6 +19,7 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
 
     private static final String BUNGEE_CHANNEL = "BungeeCord";
     private static final String AC = "AlertChannel";
+    private static final String ALL_TARGET = "ALL";
     private String prefix;
     private String setinha;
     private boolean espacoEntreAlert;
@@ -43,7 +44,7 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
             return false;
         }
         if (args.length < 2) {
-            sender.sendMessage(ChatColor.RED + "Uso: /alert <servidor|here> <mensagem>");
+            sender.sendMessage(ChatColor.RED + "Uso: /alert <servidor|here|all> <mensagem>");
             return true;
         }
 
@@ -56,6 +57,7 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
             return true;
         }
 
+        String targetServer = "all".equalsIgnoreCase(target) ? ALL_TARGET : target;
         Player carrier = getAnyOnlinePlayer();
         if (carrier == null) {
             sender.sendMessage(ChatColor.RED + "Precisa de ao menos 1 jogador online para enviar entre servidores.");
@@ -63,10 +65,14 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
         }
 
         try {
-            serverAlertsender(carrier, target, message);
-            sender.sendMessage(ChatColor.GREEN + "Alert enviado para " + target + ".");
+            serverAlertsender(carrier, targetServer, message);
+            if (ALL_TARGET.equals(targetServer)) {
+                sender.sendMessage(ChatColor.GREEN + "Alert enviado para todos os servidores.");
+            } else {
+                sender.sendMessage(ChatColor.GREEN + "Alert enviado para " + target + ".");
+            }
         } catch (IOException e) {
-            sender.sendMessage(ChatColor.RED + "Nao foi possivel enviar o alert.");
+            sender.sendMessage(ChatColor.RED + "Não foi possivel enviar o alert.");
             getLogger().severe("Houve um erro ao encaminhar o alert para: " + target + ": " + e.getMessage());
         }
 
@@ -139,7 +145,7 @@ public final class pluginalert extends JavaPlugin implements PluginMessageListen
         }
 
         setinha = getConfig().getString("setinha", ">");
-        if (setinha == null || setinha.trim().isEmpty()) {
+        if (setinha == null || setinha.trim().isEmpty()) { //f
             setinha = ">";
         }
 

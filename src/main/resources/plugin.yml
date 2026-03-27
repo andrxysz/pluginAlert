@@ -3,8 +3,8 @@ version: '${project.version}'
 main: br.plugins.pluginalert
 commands:
   alert:
-    description: Envia um alerta para um servidor especifico ou para o servidor atual.
-    usage: /alert <servidor|here> <mensagem>
+    description: Envia um alerta para um servidor especifico, todos os servidores ou para o servidor atual.
+    usage: /alert <servidor | here | all> <mensagem>
     permission: alert.use
 permissions:
   alert.use:
