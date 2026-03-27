@@ -1,4 +1,4 @@
-# Plugin de Censura - Minecraft 1.8.9
+# Plugin de Alerts - Minecraft 1.8.9
 Um simples plugin que adiciona sistema de alerts ao seu servidor. Possui suporte de envio entre servidores com BungeeCord.
 
 ## Permissões úteis:
@@ -10,4 +10,5 @@ alert.use
 ```bash
 /alert (server) (message)
 /alert (here/all) (message)
+```
 #
